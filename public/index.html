@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Project Planner</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --surface: #ffffff;
+      --background: #f8fafc;
+      --text: #1e293b;
+      --border: #e2e8f0;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background-color: var(--background);
+      color: var(--text);
+      line-height: 1.6;
+      margin: 0;
+      padding: 2rem;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      max-width: 800px;
+      width: 100%;
+      background: var(--surface);
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    }
+
+    h1 {
+      text-align: center;
+      color: var(--primary);
+      margin-bottom: 2rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 1rem;
+      box-sizing: border-box;
+      font-family: inherit;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    button {
+      width: 100%;
+      padding: 1rem;
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    button:hover {
+      background-color: #1d4ed8;
+    }
+
+    button:disabled {
+      background-color: #94a3b8;
+      cursor: not-allowed;
+    }
+
+    #result {
+      margin-top: 2rem;
+      display: none;
+    }
+
+    .plan-section {
+      margin-bottom: 2rem;
+      padding: 1.5rem;
+      background: #f1f5f9;
+      border-radius: 8px;
+    }
+
+    .plan-section h2 {
+      margin-top: 0;
+      color: #334155;
+      border-bottom: 2px solid #cbd5e1;
+      padding-bottom: 0.5rem;
+    }
+
+    .task-item {
+      background: white;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      border-radius: 6px;
+      border-left: 4px solid var(--primary);
+    }
+
+    .tag {
+      display: inline-block;
+      background: #e2e8f0;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.875rem;
+      margin-right: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .error {
+      color: #dc2626;
+      text-align: center;
+      margin-top: 1rem;
+      display: none;
+    }
+
+    .loading {
+      text-align: center;
+      margin-top: 1rem;
+      display: none;
+      color: var(--primary);
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>AI Project Planner</h1>
+
+    <form id="monitorForm">
+      <div class="form-group">
+        <label for="mode">App Mode</label>
+        <select id="mode" onchange="updateUI()">
+          <option value="project" selected>Project Planner</option>
+          <option value="study">Study Planner</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="idea" id="idea-label">Project Idea</label>
+        <textarea id="idea" placeholder="Describe your goal..." required></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="time">Available Time</label>
+        <input type="text" id="time" placeholder="e.g. 10 hours/week, 2 months">
+      </div>
+
+      <div class="form-group">
+        <label for="experience">Experience Level</label>
+        <select id="experience">
+          <option value="Beginner">Beginner</option>
+          <option value="Intermediate" selected>Intermediate</option>
+          <option value="Advanced">Advanced</option>
+        </select>
+      </div>
+
+      <button type="submit" id="generateBtn">Generate Plan</button>
+    </form>
+
+    <div id="loading" class="loading">Thinking... (This may take a few seconds)</div>
+    <div id="error" class="error"></div>
+
+    <div id="result">
+      <!-- Plan content will be injected here -->
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('monitorForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const btn = document.getElementById('generateBtn');
+      const loading = document.getElementById('loading');
+      const errorDiv = document.getElementById('error');
+      const resultDiv = document.getElementById('result');
+
+      // Reset UI
+      btn.disabled = true;
+      loading.style.display = 'block';
+      errorDiv.style.display = 'none';
+      resultDiv.style.display = 'none';
+      resultDiv.innerHTML = '';
+
+      const mode = document.getElementById('mode').value;
+      const idea = document.getElementById('idea').value;
+      const time = document.getElementById('time').value;
+      const experience = document.getElementById('experience').value;
+
+      try {
+        // Fetch to the rewrite URL which maps to the function
+        const response = await fetch("/planProject", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ idea, time, experience, mode })
+        });
+
+
+        if (!response.ok) {
+          const errText = await response.text();
+          throw new Error(`Server error: ${response.status} - ${errText}`);
+        }
+
+        const data = await response.json();
+        renderPlan(data);
+
+      } catch (err) {
+        console.error(err);
+        errorDiv.textContent = 'Error: ' + err.message;
+        errorDiv.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        loading.style.display = 'none';
+      }
+    });
+
+    function updateUI() {
+      const mode = document.getElementById('mode').value;
+      const label = document.getElementById('idea-label');
+      const placeholder = document.getElementById('idea');
+
+      if (mode === 'study') {
+        label.innerText = "Learning Goal / Subject";
+        placeholder.placeholder = "e.g. Master Linear Algebra in 2 weeks...";
+        document.querySelector('h1').innerText = "AI Study Planner";
+      } else {
+        label.innerText = "Project Idea";
+        placeholder.placeholder = "e.g. A personal finance tracker available on web and mobile...";
+        document.querySelector('h1').innerText = "AI Project Planner";
+      }
+    }
+
+    function renderPlan(data) {
+      const resultDiv = document.getElementById('result');
+      let html = '';
+
+      // Common Overview
+      html += `
+        <div class="plan-section">
+            <h2>Overview</h2>
+            <p>${data.overview}</p>
+            <p><strong>Estimated Timeline:</strong> ${data.timeline}</p>
+        </div>
+      `;
+
+      // MODE: PROJECT
+      if (data.mode === 'project' || (!data.mode && data.techStack)) {
+        if (data.techStack && data.techStack.length) {
+          html += `
+            <div class="plan-section">
+                <h2>Tech Stack</h2>
+                <div>
+                   ${data.techStack.map(tech => `<span class="tag">${tech}</span>`).join('')}
+                </div>
+            </div>
+          `;
+        }
+        if (data.tasks && data.tasks.length) {
+          html += `<div class="plan-section"><h2>Tasks</h2>`;
+          data.tasks.forEach(task => {
+            html += `
+              <div class="task-item">
+                  <h3>${task.title}</h3>
+                  <p>${task.description}</p>
+              </div>
+            `;
+          });
+          html += `</div>`;
+        }
+      }
+
+      // MODE: STUDY
+      else if (data.mode === 'study' || data.dailyPlan) {
+        if (data.dailyPlan && data.dailyPlan.length) {
+          html += `<div class="plan-section"><h2>Study Plan</h2>`;
+          data.dailyPlan.forEach(day => {
+            html += `
+               <div class="task-item">
+                 <h3>${day.day}: ${day.focus}</h3>
+                 <ul>
+                   ${day.tasks.map(t => `<li>${t}</li>`).join('')}
+                 </ul>
+               </div>
+             `;
+          });
+          html += `</div>`;
+        }
+
+        if (data.studyTips && data.studyTips.length) {
+          html += `
+            <div class="plan-section">
+              <h2>Study Tips</h2>
+              <ul>
+                ${data.studyTips.map(tip => `<li>${tip}</li>`).join('')}
+              </ul>
+            </div>
+          `;
+        }
+      }
+
+      // Common Risks
+      if (data.risks && data.risks.length) {
+        html += `
+            <div class="plan-section">
+                <h2>Potential Risks / Difficulties</h2>
+                <ul>
+                    ${data.risks.map(risk => `<li>${risk}</li>`).join('')}
+                </ul>
+            </div>
+        `;
+      }
+
+      resultDiv.innerHTML = html;
+      resultDiv.style.display = 'block';
+    }
+  </script>
+</body>
+
+</html>
