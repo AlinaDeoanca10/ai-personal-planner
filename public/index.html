@@ -208,15 +208,19 @@
       const experience = document.getElementById('experience').value;
 
       try {
-        // Fetch to the rewrite URL which maps to the function
+        // Fetch to the rewrite URL which maps to the Firebase Cloud Function
         const response = await fetch("/planProject", {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
           },
-          body: JSON.stringify({ idea, time, experience, mode })
+          body: JSON.stringify({
+            idea,
+            time,
+            experience,
+            mode
+          })
         });
-
 
         if (!response.ok) {
           const errText = await response.text();
