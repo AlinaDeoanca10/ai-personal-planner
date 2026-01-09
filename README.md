@@ -35,7 +35,6 @@ https://ai-project-planner-77654.web.app/
 ## 💡 Tips and Tricks (Learning Process)
 - Learned how to use Firebase Emulators before deploying.
 - Understood the difference between Firebase Hosting and Cloud Functions.
-- Solved CORS and fetch issues when connecting frontend to backend.
 - Learned how to manage environment variables securely using `.env` and `.gitignore`.
 - Used GitHub and Git Credential Manager for authentication.
 
